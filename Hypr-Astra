@@ -1,0 +1,318 @@
+// ==UserScript==
+// @name         Hypr Astra
+// @namespace    http://tampermonkey.net/
+// @version      26.7
+// @description  MOD EVOWARS.IO VIP BY nthch
+// @author       nthch
+// @match        https://evowars.io/*
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=evowars.io
+// @grant        none
+// @license      MIT
+// @downloadURL https://update.greasyfork.org/scripts/581536/HyprAstra.user.js
+// @updateURL https://update.greasyfork.org/scripts/581536/HyprAstra.meta.js
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    let isAuthenticated = true;
+    const WEAPON_STATS = {
+            0: {
+                distance: 200,
+                degrees: 125
+            },
+            2: {
+                distance: 235,
+                degrees: 90
+            },
+            3: {
+                distance: 245,
+                degrees: 125
+            },
+            4: {
+                distance: 260,
+                degrees: 125
+            },
+            5: {
+                distance: 300,
+                degrees: 133
+            },
+            6: {
+                distance: 340,
+                degrees: 125
+            },
+            7: {
+                distance: 380,
+                degrees: 131
+            },
+            8: {
+                distance: 343,
+                degrees: 130
+            },
+            9: {
+                distance: 350,
+                degrees: 125
+            },
+            10: {
+                distance: 470,
+                degrees: 133
+            },
+            11: {
+                distance: 510,
+                degrees: 129
+            },
+            12: {
+                distance: 520,
+                degrees: 133
+            },
+            13: {
+                distance: 555,
+                degrees: 134
+            },
+            14: {
+                distance: 595,
+                degrees: 125
+            },
+            15: {
+                distance: 650,
+                degrees: 129
+            },
+            16: {
+                distance: 655,
+                degrees: 131
+            },
+            17: {
+                distance: 660,
+                degrees: 125
+            },
+            18: {
+                distance: 695,
+                degrees: 125
+            },
+            19: {
+                distance: 690,
+                degrees: 125
+            },
+            20: {
+                distance: 710,
+                degrees: 130
+            },
+            21: {
+                distance: 775,
+                degrees: 130
+            },
+            22: {
+                distance: 805,
+                degrees: 136
+            },
+            23: {
+                distance: 680,
+                degrees: 122
+            },
+            24: {
+                distance: 870,
+                degrees: 125
+            },
+            25: {
+                distance: 940,
+                degrees: 137
+            },
+            26: {
+                distance: 975,
+                degrees: 130
+            },
+            27: {
+                distance: 1050,
+                degrees: 125
+            },
+            28: {
+                distance: 1095,
+                degrees: 125
+            },
+            29: {
+                distance: 1000,
+                degrees: 135
+            },
+            30: {
+                distance: 995,
+                degrees: 125
+            },
+            31: {
+                distance: 1050,
+                degrees: 130
+            },
+            32: {
+                distance: 1145,
+                degrees: 134
+            },
+            33: {
+                distance: 1120,
+                degrees: 139
+            },
+            34: {
+                distance: 1125,
+                degrees: 124
+            },
+            35: {
+                distance: 1145,
+                degrees: 135
+            },
+            36: {
+                distance: 1250,
+                degrees: 122
+            },
+            37: {
+                distance: 1300,
+                degrees: 125
+            },
+            38: {
+                distance: 1300,
+                degrees: 125
+            },
+            39: {
+                distance: 1300,
+                degrees: 125
+            }
+        },
+        getWeaponStats = level => WEAPON_STATS[level] || {
+            distance: Math.max(200, level * 30),
+            degrees: 125
+        },
+        ARC_MULTIPLIERS = {
+            1: 0.6,
+            2: 0.75,
+            3: 0.7,
+            4: 0.75,
+            5: 0.8,
+            6: 0.75,
+            7: 0.76,
+            8: 0.75,
+            9: 0.9,
+            10: 0.95,
+            11: 0.8,
+            12: 0.75,
+            13: 0.75,
+            14: 0.8,
+            15: 0.8,
+            16: 0.7,
+            17: 0.75,
+            18: 0.8,
+            19: 0.8,
+            20: 0.85,
+            21: 0.85,
+            22: 0.81,
+            23: 0.82,
+            24: 1.05,
+            25: 0.85,
+            26: 0.8,
+            27: 0.85,
+            28: 0.78,
+            29: 0.7,
+            30: 0.8,
+            31: 0.85,
+            32: 0.85,
+            33: 0.8,
+            34: 0.8,
+            35: 0.83,
+            36: 0.9,
+            37: 0.85,
+            38: 0.9,
+            39: 0.95,
+            40: 0.91,
+            41: 1.06
+        },
+        getArcMultiplier = (level, defaultMul) => ARC_MULTIPLIERS[Math.floor(level) + 1] || defaultMul;
+    window.ultimate_ghostAngle = null, window.ultimate_angleLockTime = 0;
+    const styleElement = document.createElement("style");
+    styleElement.innerHTML = "\n        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');\n        #evo-lock-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: linear-gradient(135deg, #0f0c20 0%, #15102a 50%, #060409 100%); z-index: 2147483646; display: flex; align-items: center; justify-content: center; pointer-events: all; }\n        #evo-key-panel { width: 420px; background: rgba(12, 10, 18, 0.96); border: 2px solid #3b82f6; border-radius: 20px; font-family: 'Inter', sans-serif; padding: 30px; box-shadow: 0 0 40px rgba(59, 130, 246, 0.6); color: #fff; text-align: center; z-index: 2147483647; }\n        #evo-key-input { width: 100%; padding: 14px; margin: 20px 0; background: #161421; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 10px; color: #fff; font-size: 15px; text-align: center; outline: none; box-sizing: border-box; font-weight: 600; letter-spacing: 0.5px; }\n        #evo-key-input:focus { border-color: #3b82f6; box-shadow: 0 0 10px rgba(59,130,246,0.5); }\n        .evo-key-btn { width: 48%; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 13px; cursor: pointer; border: none; margin: 5px 1%; transition: 0.2s; }\n        #evo-btn-submit { background: #3b82f6; color: white; } #evo-btn-submit:hover { background: #2563eb; box-shadow: 0 0 12px rgba(59,130,246,0.6); }\n        #evo-btn-getkey { background: #221f36; color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); } #evo-btn-getkey:hover { background: #2d294a; }\n        #evo-btn-tele { background: #0088cc; color: white; box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3); width: 100%; margin: 0; transition: 0.2s; }\n        #evo-btn-tele:hover { background: #007bb3; box-shadow: 0 0 15px rgba(0, 136, 204, 0.6); transform: scale(1.02); }\n        #evo-key-msg { font-size: 13px; margin-top: 15px; font-weight: 600; min-height: 20px; line-height: 1.4; }\n        #evo-toggle-btn { display: none !important; }\n        #evo-menu { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); width: 700px; height: 460px; background: rgba(12, 18, 34, 0.65); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border-radius: 16px; font-family: 'Inter', sans-serif; color: #cbd5e1; z-index: 99998; box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.15); display: flex; flex-direction: column; overflow: hidden; min-width: 550px; display: none; user-select: none; }\n        #evo-menu::-webkit-scrollbar { width: 6px; height: 6px; } #evo-menu::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.6); border-radius: 4px; }\n        #evo-header { height: 48px; min-height: 48px; padding: 0 20px; font-size: 15px; font-weight: 700; color: #fff; border-bottom: 1px solid rgba(255, 255, 255, 0.12); cursor: default; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(90deg, rgba(30, 58, 138, 0.6), rgba(15, 23, 42, 0.6)); position: sticky; top: 0; z-index: 2; user-select: none; border-radius: 16px 16px 0 0; }\n        .evo-body { display: flex; padding: 20px; gap: 20px; flex-wrap: wrap; overflow-y: auto; height: calc(100% - 48px); } .evo-col { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 15px; }\n        .section-title { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: #38bdf8; margin-bottom: 6px; text-transform: uppercase; }\n        .section { background: rgba(255, 255, 255, 0.04); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 12px; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1); }\n        .row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #f1f5f9; font-weight: 500; }\n        .switch { position: relative; width: 36px; height: 20px; flex-shrink: 0;} .switch input { opacity: 0; width: 0; height: 0; }\n        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.15); transition: .2s; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); } .slider:before { position: absolute; content: \"\"; height: 14px; width: 14px; left: 2px; bottom: 2px; background: #fff; transition: .2s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }\n        input:checked + .slider { background: #3b82f6; border-color: #60a5fa; box-shadow: 0 0 12px rgba(59, 130, 246, 0.6); } input:checked + .slider:before { transform: translateX(16px); }\n        .range-wrap { display: flex; align-items: center; gap: 10px; width: 60%; } input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; outline: none; } input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #3b82f6; cursor: pointer; box-shadow: 0 0 8px rgba(59,130,246,0.8); border: 1px solid #60a5fa; }\n        .val-disp { color: #38bdf8; font-size: 12px; font-weight: bold; min-width: 35px; text-align: right; }\n        #evo-expire-warning { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(225, 29, 72, 0.95); border: 2px solid #fda4af; color: #fff; padding: 12px 25px; border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 800; z-index: 2147483647; box-shadow: 0 0 30px rgba(225, 29, 72, 0.8); display: none; pointer-events: none; transition: opacity 0.5s; text-align: center; text-transform: uppercase; letter-spacing: 1px; }\n        #evo-kick-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(5, 3, 10, 0.98); z-index: 2147483647; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; display: none; pointer-events: all; }\n        .kick-btn { margin-top: 25px; padding: 14px 30px; background: #3b82f6; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-weight: 800; font-size: 15px; transition: 0.2s; text-transform: uppercase; }\n        .kick-btn:hover { background: #2563eb; transform: scale(1.05); box-shadow: 0 0 20px rgba(59,130,246,0.6); }\n        #evo-lang-btn { cursor: pointer; font-size: 11px; font-weight: 600; border: 1px solid rgba(59, 130, 246, 0.5); background: rgba(59, 130, 246, 0.2); padding: 3px 8px; border-radius: 6px; color: #fff; transition: 0.2s; }\n        #evo-lang-btn:hover { background: rgba(59, 130, 246, 0.4); box-shadow: 0 0 10px rgba(59,130,246,0.5); }\n    ";
+    document.head.appendChild(styleElement);
+    const MENU_HTML = "\n        <div id=\"evo-menu\">\n            <div id=\"evo-header\">\n                <span data-i18n=\"title\">Hypr Astra by nthch</span>\n                <span style=\"display:flex; gap:10px; align-items:center;\">\n                    <span id=\"evo-lang-btn\">VN</span>\n                </span>\n            </div>\n            <div class=\"evo-body\">\n                <div class=\"evo-col\">\n                    <div>\n                        <div class=\"section-title\" data-i18n=\"visuals\">VISUALS (ESP)</div>\n                        <div class=\"section\">\n                            <div class=\"row\"><span data-i18n=\"visual_cd\">Visual CD Timer</span><label class=\"switch\"><input type=\"checkbox\" id=\"c-cooldown\" checked><span class=\"slider\"></span></label></div>\n                            <div class=\"row\"><span data-i18n=\"blaze\">Blaze Perfect Arc</span><label class=\"switch\"><input type=\"checkbox\" id=\"c-player-arc\" checked><span class=\"slider\"></span></label></div>\n                            <div class=\"row\"><span data-i18n=\"lines\">Draw Target Lines</span><label class=\"switch\"><input type=\"checkbox\" id=\"c-lines\" checked><span class=\"slider\"></span></label></div>\n                            <div class=\"row\"><span data-i18n=\"hitboxes\">Show Hitboxes & Level</span><label class=\"switch\"><input type=\"checkbox\" id=\"c-hitboxes\" checked><span class=\"slider\"></span></label></div>\n                        </div>\n                    </div>\n                    <div>\n                        <div class=\"section-title\" data-i18n=\"utility\">MODIFIERS & UTILITY</div>\n                        <div class=\"section\">\n                            <div class=\"row\"><span data-i18n=\"zoom\">Camera Zoom</span><div class=\"range-wrap\"><input type=\"range\" id=\"c-zoom\" min=\"0.1\" max=\"4\" step=\"0.05\" value=\"1\"><div class=\"val-disp\" id=\"v-zoom\">1.00</div></div></div>\n                        </div>\n                    </div>\n                </div>\n                <div class=\"evo-col\">\n                    <div>\n                        <div class=\"section-title\" data-i18n=\"combat\">COMBAT AUTOMATION</div>\n                        <div class=\"section\">\n                            <div class=\"row\" style=\"color: #f43f5e;\"><span data-i18n=\"filter\">Filter Low Lv (E)</span><label class=\"switch\"><input type=\"checkbox\" id=\"c-filter\" checked><span class=\"slider\"></span></label></div>\n                            <div class=\"row\" style=\"color: #fbbf24;\"><span data-i18n=\"punish\">True AI Punish</span><label class=\"switch\"><input type=\"checkbox\" id=\"c-punish\"><span class=\"slider\"></span></label></div>\n                            <div class=\"row\" style=\"color: #34d399;\"><span data-i18n=\"predator\">Predator Aim</span><label class=\"switch\"><input type=\"checkbox\" id=\"c-blaze-aim\" checked disabled><span class=\"slider\"></span></label></div>\n                            <div class=\"row\"><span data-i18n=\"dodge\">Auto-Dodge</span><label class=\"switch\"><input type=\"checkbox\" id=\"c-dodge\"><span class=\"slider\"></span></label></div>\n                            <div class=\"row\"><span data-i18n=\"sprint\">Auto-Sprint</span><label class=\"switch\"><input type=\"checkbox\" id=\"c-sprint\"><span class=\"slider\"></span></label></div>\n                            <div class=\"row\"><span data-i18n=\"hunt\">Auto-Hunt</span><label class=\"switch\"><input type=\"checkbox\" id=\"c-hunt\"><span class=\"slider\"></span></label></div>\n                            <div class=\"row\"><span data-i18n=\"attack\">Auto-Attack</span><label class=\"switch\"><input type=\"checkbox\" id=\"c-attack\"><span class=\"slider\"></span></label></div>\n                            <div class=\"row\" style=\"color: #a78bfa;\"><span data-i18n=\"teamMode\">Team Mode (FFA off)</span><label class=\"switch\"><input type=\"checkbox\" id=\"c-teamMode\"><span class=\"slider\"></span></label></div>\n                        </div>\n                    </div>\n                </div>\n            </div>\n        </div>\n    ";
+    const menuContainer = document.createElement("div");
+    menuContainer.innerHTML = MENU_HTML;
+    document.body.appendChild(menuContainer);
+    const menuElement = document.getElementById("evo-menu");
+    let menuVisible = false;
+    const toggleMenu = () => {
+        if (!isAuthenticated) return;
+        menuVisible = !menuVisible, menuElement.style.display = menuVisible ? "flex" : "none";
+    };
+    const config = {
+            filter: true,
+            lines: true,
+            hitboxes: true,
+            cooldown: true,
+            playerArc: true,
+            punish: false,
+            dodge: false,
+            sprint: false,
+            hunt: false,
+            attack: false,
+            zoom: 1,
+            lvlMin: 0,
+            lvlMax: 200,
+            reachMul: 0.85,
+            teamMode: false   // ThĂªm tĂ¹y chá»n team mode, máº·c Ä‘á»‹nh FFA (false)
+        },
+        uiRefs = {
+            menuCheckboxes: {},
+            panelButtons: {}
+        },
+        syncUI = () => {
+            for (let key in uiRefs.menuCheckboxes) {
+                if (uiRefs.menuCheckboxes[key]) uiRefs.menuCheckboxes[key].checked = config[key];
+            }
+            for (let key2 in uiRefs.panelButtons) {
+                if (uiRefs.panelButtons[key2]) uiRefs.panelButtons[key2]();
+            }
+        },
+        TRANSLATIONS = {
+            vi: {
+                title: "Hypr Astra by nthch",
+                visuals: "HIá»‚N THá» (ESP)",
+                visual_cd: "Äáº¿m ngÆ°á»£c CD",
+                blaze: "Cung Blaze",
+                lines: "ÄÆ°á»ng má»¥c tiĂªu",
+                hitboxes: "Khung hitbox",
+                utility: "MODIFIER & TIá»†N ĂCH",
+                zoom: "Thu phĂ³ng Camera",
+                combat: "Tá»° Äá»˜NG CHIáº¾N Äáº¤U",
+                filter: "Lá»c cáº¥p tháº¥p",
+                punish: "TĂ­ch há»£p AI",
+                predator: "Ngáº¯m báº¯n Predator",
+                dodge: "Tá»± nĂ© (Dodge)",
+                sprint: "Tá»± tÄƒng tá»‘c (Sprint)",
+                hunt: "Tá»± sÄƒn (Hunt)",
+                attack: "Tá»± chĂ©m (Attack)",
+                p_filter: "Lá»c cáº¥p tháº¥p (E)",
+                p_punish: "TĂ­ch há»£p AI (P)",
+                p_dodge: "Tá»± nĂ© (W)",
+                p_attack: "Tá»± chĂ©m (C)",
+                p_hunt: "Tá»± sÄƒn (V)",
+                p_sprint: "Tá»± tÄƒng tá»‘c (B)",
+                teamMode: "Cháº¿ Ä‘á»™ Ä‘á»™i (táº¯t FFA)"
+            },
+            en: {
+                title: "Hypr Astra by nthch",
+                visuals: "VISUALS (ESP)",
+                visual_cd: "Visual CD Timer",
+                blaze: "Blaze Perfect Arc",
+                lines: "Draw Target Lines",
+                hitboxes: "Show Hitboxes",
+                utility: "MODIFIERS & UTILITY",
+                zoom: "Camera Zoom",
+                combat: "COMBAT AUTOMATION",
+                filter: "Filter Low Lv (E)",
+                punish: "True AI Punish",
+                predator: "Predator Aim",
+                dodge: "Auto-Dodge",
+                sprint: "Auto-Sprint",
+                hunt: "Auto-Hunt",
+                attack: "Auto-Attack",
+                p_filter: "Filter Low Lv (E)",
+                p_punish: "True AI Punish (P)",
+                p_dodge: "Auto-Dodge (W)",
+                p_attack: "Ghost Hit (C)",
+                p_hunt: "Auto-Hunt (V)",
+                p_sprint: "Auto-Sprint (B)",
+                teamMode: "Team Mode (FFA off)"
+            }
