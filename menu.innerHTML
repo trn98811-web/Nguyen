@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Giao Diện Quản Lý Mẫu (Standard Dark UI)</title>
+    <style>
+        body {
+            background-color: #0d0d11;
+            color: #d1d1e0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .main-panel {
+            width: 360px;
+            background: #16161e;
+            border: 1px solid #282836;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #282836;
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #7c5cff;
+        }
+
+        .section-header {
+            font-size: 11px;
+            font-weight: bold;
+            color: #62627a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 15px 0 10px 0;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 13px;
+        }
+
+        /* Cong tac Toggle */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 38px;
+            height: 20px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute; cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #2b2b3a;
+            transition: .3s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute; content: "";
+            height: 14px; width: 14px;
+            left: 3px; bottom: 3px;
+            background-color: #ffffff;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: #7c5cff; }
+        input:checked + .slider:before { transform: translateX(18px); }
+    </style>
+</head>
+<body>
+
+    <div class="main-panel">
+        <div class="panel-header">
+            <span class="panel-title">BẢNG CẤU HÌNH DỰ ÁN</span>
+        </div>
+
+        <div class="section-header">HIỂN THỊ ĐỒ HỌA</div>
+        <div class="control-row">
+            <span>Chế độ lưới (Grid Display)</span>
+            <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="control-row">
+            <span>Chỉ số FPS</span>
+            <label class="switch">
+                <input type="checkbox">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="section-header">HỆ THỐNG</div>
+        <div class="control-row">
+            <span>Tự động lưu cấu hình</span>
+            <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+</body>
+</html>
