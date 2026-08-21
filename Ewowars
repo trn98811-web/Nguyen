@@ -1,0 +1,637 @@
+// ==UserScript==
+// @name         EWO V2 - Mobile Admin & Debug Menu
+// @namespace    ewo-v2
+// @version      1.0.0
+// @description  Mobile admin/debug menu cho EWO V2
+// @match        https://YOUR-GAME-DOMAIN/*
+// @grant        none
+// ==/UserScript==
+
+(() => {
+    "use strict";
+
+    /* =========================
+       CONFIG
+    ========================= */
+
+    const API = "/api/admin";
+
+    const FEATURES = {
+        esp: false,
+        hitbox: false,
+        targetLines: false,
+        cdTimer: false,
+        cameraZoom: 1,
+        autoDodge: false
+    };
+
+    /* =========================
+       STYLE
+    ========================= */
+
+    const css = `
+    #ewo-launcher {
+        position:fixed;
+        right:18px;
+        bottom:18px;
+        width:62px;
+        height:62px;
+        border-radius:50%;
+        border:3px solid white;
+        z-index:2147483647;
+        cursor:pointer;
+        color:white;
+        font-size:25px;
+        font-weight:900;
+        background:
+          conic-gradient(
+            #ff006e,
+            #ffbe0b,
+            #00f5d4,
+            #4361ee,
+            #8338ec,
+            #ff006e
+          );
+        box-shadow:
+          0 0 15px #8b2cff,
+          0 0 35px rgba(139,44,255,.7);
+    }
+
+    #ewo-menu {
+        position:fixed;
+        left:50%;
+        top:50%;
+        transform:translate(-50%,-50%);
+        width:min(94vw,720px);
+        max-height:86vh;
+        overflow:hidden;
+        display:none;
+        z-index:2147483646;
+        color:#fff;
+        font-family:Arial,sans-serif;
+        background:#09060e;
+        border:1px solid #8b35ff;
+        border-radius:16px;
+        box-shadow:0 0 45px rgba(130,40,255,.5);
+    }
+
+    #ewo-menu.open {
+        display:block;
+    }
+
+    .ewo-head {
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        padding:14px 16px;
+        border-bottom:1px solid #34194d;
+    }
+
+    .ewo-title {
+        font-size:19px;
+        font-weight:900;
+        background:linear-gradient(
+          90deg,
+          #ff55ee,
+          #7160ff,
+          #25ddff,
+          #9cff48
+        );
+        -webkit-background-clip:text;
+        color:transparent;
+    }
+
+    .ewo-close {
+        width:34px;
+        height:34px;
+        border:1px solid #813cff;
+        border-radius:8px;
+        background:#160b22;
+        color:white;
+        font-size:20px;
+        cursor:pointer;
+    }
+
+    .ewo-body {
+        padding:14px;
+        max-height:calc(86vh - 64px);
+        overflow:auto;
+    }
+
+    .ewo-grid {
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:12px;
+    }
+
+    .ewo-card {
+        background:#0d0913;
+        border:1px solid #32194a;
+        border-radius:12px;
+        overflow:hidden;
+    }
+
+    .ewo-card-title {
+        padding:10px 12px;
+        color:#bd7cff;
+        font-size:13px;
+        font-weight:900;
+        border-bottom:1px solid #291536;
+    }
+
+    .ewo-row {
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+        padding:10px 12px;
+        font-size:13px;
+    }
+
+    .ewo-row + .ewo-row {
+        border-top:1px solid rgba(255,255,255,.04);
+    }
+
+    .ewo-switch {
+        width:43px;
+        height:24px;
+        border:0;
+        border-radius:20px;
+        background:#35343a;
+        position:relative;
+        cursor:pointer;
+        flex:none;
+    }
+
+    .ewo-switch:after {
+        content:"";
+        position:absolute;
+        width:18px;
+        height:18px;
+        top:3px;
+        left:3px;
+        border-radius:50%;
+        background:#ddd;
+        transition:.15s;
+    }
+
+    .ewo-switch.on {
+        background:#7d28ff;
+        box-shadow:0 0 10px rgba(125,40,255,.6);
+    }
+
+    .ewo-switch.on:after {
+        left:22px;
+        background:white;
+    }
+
+    .ewo-slider {
+        width:120px;
+    }
+
+    .ewo-player {
+        display:flex;
+        align-items:center;
+        gap:8px;
+        padding:9px;
+        border-bottom:1px solid rgba(255,255,255,.05);
+    }
+
+    .ewo-player-info {
+        flex:1;
+        min-width:0;
+    }
+
+    .ewo-name {
+        font-weight:800;
+    }
+
+    .ewo-id {
+        opacity:.5;
+        font-size:10px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+
+    .ewo-btn {
+        border:0;
+        border-radius:7px;
+        padding:7px 9px;
+        color:white;
+        font-weight:800;
+        cursor:pointer;
+    }
+
+    .ewo-kick {
+        background:#7430d9;
+    }
+
+    .ewo-ban {
+        background:#c51c5c;
+    }
+
+    .ewo-refresh {
+        width:100%;
+        margin-top:10px;
+        padding:10px;
+        background:#130b1d;
+        border:1px solid #7430d9;
+        border-radius:9px;
+        color:white;
+        font-weight:800;
+        cursor:pointer;
+    }
+
+    .ewo-status {
+        padding:9px;
+        opacity:.65;
+        font-size:12px;
+    }
+
+    @media(max-width:600px) {
+        #ewo-menu {
+            width:96vw;
+        }
+
+        .ewo-grid {
+            grid-template-columns:1fr;
+        }
+    }
+    `;
+
+    const style = document.createElement("style");
+    style.textContent = css;
+    document.head.appendChild(style);
+
+    /* =========================
+       MENU
+    ========================= */
+
+    const launcher = document.createElement("button");
+    launcher.id = "ewo-launcher";
+    launcher.textContent = "X";
+
+    const menu = document.createElement("div");
+    menu.id = "ewo-menu";
+
+    menu.innerHTML = `
+        <div class="ewo-head">
+            <div class="ewo-title">
+                EWOWARS V2 — MOBILE
+            </div>
+
+            <button class="ewo-close">×</button>
+        </div>
+
+        <div class="ewo-body">
+
+            <div class="ewo-grid">
+
+                <div class="ewo-card">
+
+                    <div class="ewo-card-title">
+                        VISUALS / DEBUG
+                    </div>
+
+                    <div class="ewo-row">
+                        <span>Show Debug ESP</span>
+                        <button class="ewo-switch"
+                            data-feature="esp"></button>
+                    </div>
+
+                    <div class="ewo-row">
+                        <span>Show Hitboxes</span>
+                        <button class="ewo-switch"
+                            data-feature="hitbox"></button>
+                    </div>
+
+                    <div class="ewo-row">
+                        <span>Target Lines</span>
+                        <button class="ewo-switch"
+                            data-feature="targetLines"></button>
+                    </div>
+
+                    <div class="ewo-row">
+                        <span>Cooldown Timer</span>
+                        <button class="ewo-switch"
+                            data-feature="cdTimer"></button>
+                    </div>
+
+                </div>
+
+                <div class="ewo-card">
+
+                    <div class="ewo-card-title">
+                        MODIFIERS & UTILITY
+                    </div>
+
+                    <div class="ewo-row">
+                        <span>Camera Zoom</span>
+
+                        <input
+                            class="ewo-slider"
+                            id="ewo-zoom"
+                            type="range"
+                            min="0.5"
+                            max="2"
+                            step="0.05"
+                            value="1"
+                        />
+                    </div>
+
+                    <div class="ewo-row">
+                        <span>Debug Auto-Dodge</span>
+                        <button class="ewo-switch"
+                            data-feature="autoDodge"></button>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="ewo-card" style="margin-top:12px">
+
+                <div class="ewo-card-title">
+                    ONLINE PLAYERS
+                </div>
+
+                <div id="ewo-players">
+                    <div class="ewo-status">
+                        Đang tải...
+                    </div>
+                </div>
+
+            </div>
+
+            <button
+                id="ewo-refresh"
+                class="ewo-refresh">
+                ↻ REFRESH PLAYERS
+            </button>
+
+            <div
+                id="ewo-status"
+                class="ewo-status">
+                EWO V2 ready.
+            </div>
+
+        </div>
+    `;
+
+    document.body.appendChild(launcher);
+    document.body.appendChild(menu);
+
+    /* =========================
+       DEBUG BRIDGE
+       =========================
+
+       Game của bạn có thể cung cấp:
+
+       window.EWO_DEBUG = {
+           setFeature(name, value) {},
+           setCameraZoom(value) {}
+       };
+    */
+
+    function debugCall(method, ...args) {
+        if (
+            window.EWO_DEBUG &&
+            typeof window.EWO_DEBUG[method] === "function"
+        ) {
+            return window.EWO_DEBUG[method](...args);
+        }
+
+        console.log(
+            "[EWO DEBUG]",
+            method,
+            ...args
+        );
+    }
+
+    /* =========================
+       TOGGLE
+    ========================= */
+
+    menu.querySelectorAll(".ewo-switch")
+        .forEach(button => {
+
+            button.addEventListener("click", () => {
+
+                const feature =
+                    button.dataset.feature;
+
+                FEATURES[feature] =
+                    !FEATURES[feature];
+
+                button.classList.toggle(
+                    "on",
+                    FEATURES[feature]
+                );
+
+                debugCall(
+                    "setFeature",
+                    feature,
+                    FEATURES[feature]
+                );
+            });
+
+        });
+
+    /* =========================
+       CAMERA
+    ========================= */
+
+    document
+        .querySelector("#ewo-zoom")
+        .addEventListener("input", e => {
+
+            const zoom =
+                Number(e.target.value);
+
+            FEATURES.cameraZoom = zoom;
+
+            debugCall(
+                "setCameraZoom",
+                zoom
+            );
+        });
+
+    /* =========================
+       OPEN / CLOSE
+    ========================= */
+
+    function toggleMenu() {
+        menu.classList.toggle("open");
+
+        if (
+            menu.classList.contains("open")
+        ) {
+            loadPlayers();
+        }
+    }
+
+    launcher.addEventListener(
+        "click",
+        toggleMenu
+    );
+
+    menu.querySelector(".ewo-close")
+        .addEventListener(
+            "click",
+            toggleMenu
+        );
+
+    /* =========================
+       ADMIN API
+    ========================= */
+
+    async function api(path, options = {}) {
+
+        const response =
+            await fetch(
+                API + path,
+                {
+                    credentials:"include",
+
+                    ...options,
+
+                    headers:{
+                        "Content-Type":
+                            "application/json",
+
+                        ...(options.headers || {})
+                    }
+                }
+            );
+
+        const data =
+            await response
+                .json()
+                .catch(() => ({}));
+
+        if (!response.ok) {
+            throw new Error(
+                data.error ||
+                `HTTP ${response.status}`
+            );
+        }
+
+        return data;
+    }
+
+    /* =========================
+       PLAYERS
+    ========================= */
+
+    async function loadPlayers() {
+
+        const container =
+            document.querySelector(
+                "#ewo-players"
+            );
+
+        container.innerHTML = `
+            <div class="ewo-status">
+                Đang tải player...
+            </div>
+        `;
+
+        try {
+
+            const data =
+                await api("/players");
+
+            container.innerHTML = "";
+
+            if (
+                !data.players ||
+                !data.players.length
+            ) {
+                container.innerHTML = `
+                    <div class="ewo-status">
+                        Không có player online.
+                    </div>
+                `;
+
+                return;
+            }
+
+            for (
+                const player of data.players
+            ) {
+
+                const row =
+                    document.createElement("div");
+
+                row.className =
+                    "ewo-player";
+
+                row.innerHTML = `
+                    <div class="ewo-player-info">
+                        <div class="ewo-name"></div>
+                        <div class="ewo-id"></div>
+                    </div>
+
+                    <button
+                        class="ewo-btn ewo-kick">
+                        KICK
+                    </button>
+
+                    <button
+                        class="ewo-btn ewo-ban">
+                        BAN
+                    </button>
+                `;
+
+                row.querySelector(".ewo-name")
+                    .textContent =
+                    player.name;
+
+                row.querySelector(".ewo-id")
+                    .textContent =
+                    player.id;
+
+                row.querySelector(".ewo-kick")
+                    .onclick =
+                    () => kick(player);
+
+                row.querySelector(".ewo-ban")
+                    .onclick =
+                    () => ban(player);
+
+                container.appendChild(row);
+            }
+
+        } catch (error) {
+
+            container.innerHTML = `
+                <div class="ewo-status">
+                    ❌ ${error.message}
+                </div>
+            `;
+        }
+    }
+
+    /* =========================
+       KICK
+    ========================= */
+
+    async function kick(player) {
+
+        if (
+            !confirm(
+                `Kick ${player.name}?`
+            )
+        ) {
+            return;
+        }
+
+        try {
+
+            await api("/kick", {
+                method:"POST",
+
+                body:JSON.stringify({
+                    playerId:player.id,
+                    reason:
+                        "Kicked by administrator
